@@ -336,7 +336,7 @@ resource "aws_db_instance" "default" {
   multi_az               = true
   db_name                = "mydb"
   username               = "kasturiakash"
-  password               = "akash@123"
+  password               = "akash123"
   skip_final_snapshot    = true
   vpc_security_group_ids = [aws_security_group.database-sg.id]
 }
