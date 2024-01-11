@@ -16,7 +16,7 @@ provider "aws" {
 resource "aws_vpc" "my-vpc" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "swiggy-VPC"
+    Name = "netflix-VPC"
   }
 }
 
@@ -103,7 +103,7 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.my-vpc.id
 
   tags = {
-    Name = "SWIGGY-IGW"
+    Name = "netflix-IGW"
   }
 }
 
@@ -327,7 +327,7 @@ resource "aws_lb_listener" "external-elb" {
   }
 }
 
-/*resource "aws_db_instance" "default" {
+resource "aws_db_instance" "default" {
   allocated_storage      = 10
   db_subnet_group_name   = aws_db_subnet_group.default.id
   engine                 = "mysql"
@@ -335,11 +335,11 @@ resource "aws_lb_listener" "external-elb" {
   instance_class         = "db.t2.micro"
   multi_az               = true
   db_name                = "mydb"
-  username               = "raham"
-  password               = "Rahamshaik#444555"
+  username               = "kasturiakash"
+  password               = "akash@123"
   skip_final_snapshot    = true
   vpc_security_group_ids = [aws_security_group.database-sg.id]
-}*/
+}
 
 resource "aws_db_subnet_group" "default" {
   name       = "main"
@@ -355,4 +355,46 @@ output "lb_dns_name" {
   description = "The DNS name of the load balancer"
   value       = aws_lb.external-elb.dns_name
 }
-          
+
+# Create Elastic IP
+resource "aws_eip" "nat_eip" {
+  vpc = true
+}
+
+# Create NAT gateway
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.web-subnet-1.id
+
+  tags = {
+    Name = "netflix-nat"
+  }
+
+  # Ensure proper ordering
+  depends_on = [aws_internet_gateway.igw]
+}
+
+# Create App layer route table
+resource "aws_route_table" "application-rt" {
+  vpc_id = aws_vpc.my-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name = "NatRT"
+  }
+}
+
+# Create App Subnet association with App route table
+resource "aws_route_table_association" "c" {
+  subnet_id   = aws_subnet.application-subnet-1.id
+  route_table_id = aws_route_table.application-rt.id
+}
+
+resource "aws_route_table_association" "d" {
+  subnet_id   = aws_subnet.application-subnet-2.id
+  route_table_id = aws_route_table.application-rt.id
+}
